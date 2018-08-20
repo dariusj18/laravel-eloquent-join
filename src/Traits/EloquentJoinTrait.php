@@ -60,7 +60,7 @@ trait EloquentJoinTrait
     public function scopeWhereJoin(Builder $builder, $column, $operator = null, $value = null, $boolean = 'and')
     {
         list($column, $operator, $value) = QueryNormalizer::normalizeScope(func_get_args());
-        $column = $this->performJoin($builder, $column);
+        $column = $this->performJoin($builder, $column, 'inner');
 
         return $builder->where($column, $operator, $value, $boolean);
     }
@@ -68,21 +68,29 @@ trait EloquentJoinTrait
     public function scopeOrWhereJoin(Builder $builder, $column, $operator = null, $value)
     {
         list($column, $operator, $value) = QueryNormalizer::normalizeScope(func_get_args());
-        $column = $this->performJoin($builder, $column);
+        $column = $this->performJoin($builder, $column, 'inner');
 
         return $builder->orWhere($column, $operator, $value);
     }
 
     public function scopeOrderByJoin(Builder $builder, $column, $sortBy = 'asc')
     {
-        $column = $this->performJoin($builder, $column);
+        $column = $this->performJoin($builder, $column, 'inner');
         return $builder->orderBy($column, $sortBy);
     }
 
 
-    private function performJoin($builder, $relations)
+    private function performJoin($builder, $relations, $joinType = 'inner')
     {
         $relations = explode('.', $relations);
+
+        if ($joinType == 'left') {
+            $joinMethod = 'leftJoin';
+        } elseif ($joinType == 'cross') {
+            $joinMethod = 'crossJoin';
+        } else {
+            $joinMethod = 'join';
+        }
 
         $column = end($relations);
         $baseTable = $this->getTable();
@@ -114,19 +122,20 @@ trait EloquentJoinTrait
                 if ($relatedRelation instanceof BelongsToJoin) {
                     $keyRelated = $relatedRelation->getForeignKey();
 
-                    $builder->leftJoin($joinQuery, function ($join) use ($relatedTableAlias, $keyRelated, $currentTable, $relatedPrimaryKey, $relatedModel) {
+                    $builder->$joinMethod($joinQuery, function ($join) use ($relatedTableAlias, $keyRelated, $currentTable, $relatedPrimaryKey, $relatedModel) {
                         $join->on($relatedTableAlias . '.' . $relatedPrimaryKey, '=', $currentTable . '.' . $keyRelated);
 
-                        $this->leftJoinQuery($join, $relatedModel, $relatedTableAlias);
+                        $this->joinQuery($join, $relatedModel, $relatedTableAlias);
                     });
                 } elseif ($relatedRelation instanceof HasOneJoin) {
                     $keyRelated = $relatedRelation->getQualifiedForeignKeyName();
                     $keyRelated = last(explode('.', $keyRelated));
 
-                    $builder->leftJoin($joinQuery, function ($join) use ($relatedTableAlias, $keyRelated, $currentTable, $relatedPrimaryKey, $relatedModel, $currentPrimaryKey) {
+                    $builder->$joinMethod($joinQuery, function ($join) use ($relatedTableAlias, $keyRelated, $currentTable, $relatedPrimaryKey, $relatedModel, $currentPrimaryKey) {
                         $join->on($relatedTableAlias . '.' . $keyRelated, '=', $currentTable . '.' . $currentPrimaryKey);
 
-                        $this->leftJoinQuery($join, $relatedModel, $relatedTableAlias);
+                        $this->joinQuery($join, $relatedModel, $relatedTableAlias);
+                    });
                     });
                 } else {
                     throw new EloquentJoinException('Only allowed relations for whereJoin, orWhereJoin and orderByJoin are BelongsToJoin, HasOneJoin');
@@ -149,7 +158,7 @@ trait EloquentJoinTrait
         return $currentTable . '.' . $column;
     }
 
-    private function leftJoinQuery($join, $relatedModel, $relatedTableAlias)
+    private function joinQuery($join, $relatedModel, $relatedTableAlias)
     {
         foreach ($relatedModel->relationWhereClauses as $relationClause) {
             $join->where($relatedTableAlias . '.' . $relationClause['column'], $relationClause['operator'], $relationClause['value'], $relationClause['boolean']);
