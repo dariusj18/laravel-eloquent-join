@@ -4,6 +4,7 @@ namespace Fico7489\Laravel\EloquentJoin\Traits;
 
 use Fico7489\Laravel\EloquentJoin\Relations\BelongsToJoin;
 use Fico7489\Laravel\EloquentJoin\Relations\HasOneJoin;
+use Fico7489\Laravel\EloquentJoin\Relations\BelongsToManyJoin;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -22,5 +23,10 @@ trait ExtendRelationsTrait
     {
         return new HasOneJoin($query, $parent, $foreignKey, $localKey);
     }
+    
+    protected function newBelongsToMany(Builder $query, Model $parent, $table, $foreignPivotKey, $relatedPivotKey,
+                                        $parentKey, $relatedKey, $relationName = null)
+    {
+        return new BelongsToManyJoin($query, $parent, $table, $foreignPivotKey, $relatedPivotKey, $parentKey, $relatedKey, $relationName);
     }
 }

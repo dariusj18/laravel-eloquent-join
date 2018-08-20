@@ -16,4 +16,9 @@ class Order extends BaseModel
     {
         return $this->belongsTo(Seller::class);
     }
+    
+    public function users()
+    {
+        return $this->belongsToMany(User::class);
+    }
 }

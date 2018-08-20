@@ -105,6 +105,27 @@ class CreateDatabase extends Migration
             $table->timestamps();
             $table->softDeletes();
         });
+
+        Schema::create('users', function (Blueprint $table) {
+            $table->increments('id');
+            $table->string('name')->nullable();
+
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('order_user', function (Blueprint $table) {
+            $table->increments('id');
+            $table->unsignedInteger('order_id');
+            $table->unsignedInteger('user_id');
+            $table->unsignedInteger('user_type')->nullable();
+            $table->unsignedInteger('weight')->default(0);
+
+            $table->timestamps();
+
+            $table->foreign('order_id')->references('id')->on('orders');
+            $table->foreign('user_id')->references('id')->on('users');
+        });
     }
 
     /**
@@ -122,5 +143,7 @@ class CreateDatabase extends Migration
         Schema::drop('zip_codes');
         Schema::drop('states');
         Schema::drop('location_addresses');
+        Schema::drop('users');
+        Schema::drop('order_user');
     }
 }

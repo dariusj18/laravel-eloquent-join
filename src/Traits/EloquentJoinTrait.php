@@ -4,6 +4,7 @@ namespace Fico7489\Laravel\EloquentJoin\Traits;
 
 use Fico7489\Laravel\EloquentJoin\Relations\BelongsToJoin;
 use Fico7489\Laravel\EloquentJoin\Exceptions\EloquentJoinException;
+use Fico7489\Laravel\EloquentJoin\Relations\BelongsToManyJoin;
 use Fico7489\Laravel\EloquentJoin\Relations\HasOneJoin;
 use Fico7489\Laravel\EloquentJoin\Services\QueryNormalizer;
 use Illuminate\Database\Eloquent\Builder;
@@ -174,9 +175,17 @@ trait EloquentJoinTrait
 
                         $this->joinQuery($join, $relatedModel, $relatedTableAlias);
                     });
+                } elseif ($relatedRelation instanceof BelongsToManyJoin) {
+                    $builder->$joinMethod($relatedRelation->getTable(), function ($join) use ($relatedRelation, $relatedTableAlias, $currentTable, $relatedPrimaryKey, $relatedModel) {
+                        $join->on($relatedRelation->getQualifiedForeignPivotKeyName(), '=', $currentTable . '.' . $relatedPrimaryKey);
+
+                        $join->join($relatedRelation->getRelated()->getTable(), function ($join) use ($relatedRelation, $relatedTableAlias, $relatedModel) {
+                            $join->on($relatedRelation->getRelated()->getQualifiedKeyName(), '=', $relatedRelation->getQualifiedRelatedPivotKeyName());
+                            $this->joinQuery($join, $relatedModel, $relatedTableAlias);
+                        });
                     });
                 } else {
-                    throw new EloquentJoinException('Only allowed relations for whereJoin, orWhereJoin and orderByJoin are BelongsToJoin, HasOneJoin');
+                    throw new EloquentJoinException('Only allowed relations for whereJoin, orWhereJoin and orderByJoin are BelongsToJoin, HasOneJoin and BelongsToManyJoin');
                 }
             }
 

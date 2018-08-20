@@ -5,6 +5,7 @@ namespace Fico7489\Laravel\EloquentJoin\Tests\Tests;
 use Fico7489\Laravel\EloquentJoin\Tests\Models\Order;
 use Fico7489\Laravel\EloquentJoin\Tests\Models\OrderItem;
 use Fico7489\Laravel\EloquentJoin\Tests\Models\Seller;
+use Fico7489\Laravel\EloquentJoin\Tests\Models\User;
 use Fico7489\Laravel\EloquentJoin\Tests\TestCase;
 
 class WhereJoinTest extends TestCase
@@ -62,6 +63,14 @@ class WhereJoinTest extends TestCase
         Seller::whereJoin('locationPrimary.city.name', '=', 'test')->get();
 
         $queryTest = '/select "sellers".* from "sellers" inner join "locations" on "locations"."seller_id" = "sellers"."id" and "locations"."is_primary" = \? and "locations"."deleted_at" is null inner join "cities" on "cities"."id" = "locations"."city_id" and "cities"."deleted_at" is null where "cities"."name" = \?/';
+        $this->assertRegExp($queryTest, $this->fetchQuery());
+    }
+
+    public function testWhereJoinHasBelongsToMany()
+    {
+        Order::whereLeftJoin('users.name', '=', 1)->get();
+
+        $queryTest = '/select "orders".* from "orders" left join \("order_user" inner join "users" on "users"."id" = "order_user"."user_id" and "users"."deleted_at" is null\) on "order_user"."order_id" = "orders"."id" where "users"."name" = \? and "orders"."deleted_at" is null/';
         $this->assertRegExp($queryTest, $this->fetchQuery());
     }
 
