@@ -118,6 +118,42 @@ trait EloquentJoinTrait
         return $builder->orderBy($column, $sortBy);
     }
 
+    public function scopeOrderByJoinPivot(Builder $builder, $column, $sortBy = 'asc')
+    {
+        $qualifiedColumn = $this->performJoin($builder, $column, 'inner');
+        
+        $relations = explode('.', $column);
+        $relation = current($relations);
+        $column = end($relations);
+
+        $builder->orderBy($this->$relation()->getTable() . '.' . $column, $sortBy);
+        
+        return $builder;
+    }
+    public function scopeOrderByLeftJoinPivot(Builder $builder, $column, $sortBy = 'asc')
+    {
+        $qualifiedColumn = $this->performJoin($builder, $column, 'left');
+        
+        $relations = explode('.', $column);
+        $relation = current($relations);
+        $column = end($relations);
+
+        $builder->orderBy($this->$relation()->getTable() . '.' . $column, $sortBy);
+        
+        return $builder;
+    }
+    public function scopeOrderByCrossJoinPivot(Builder $builder, $column, $sortBy = 'asc')
+    {
+        $qualifiedColumn = $this->performJoin($builder, $column, 'cross');
+        
+        $relations = explode('.', $column);
+        $relation = current($relations);
+        $column = end($relations);
+
+        $builder->orderBy($this->$relation()->getTable() . '.' . $column, $sortBy);
+        
+        return $builder;
+    }
 
     private function performJoin($builder, $relations, $joinType = 'inner')
     {
