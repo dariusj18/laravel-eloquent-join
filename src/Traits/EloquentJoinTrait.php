@@ -142,7 +142,8 @@ trait EloquentJoinTrait
 
         if (! $this->selected  &&  count($relations) > 1) {
             $this->selected = true;
-            $builder->select($baseTable . '.*')->groupBy($baseTable . '.' . $baseModel->primaryKey);
+            $builder->select($baseTable . '.*');
+            //$builder->groupBy($baseTable . '.' . $baseModel->primaryKey);
         }
 
         return $currentTable . '.' . $column;
