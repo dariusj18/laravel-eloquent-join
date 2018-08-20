@@ -64,6 +64,20 @@ trait EloquentJoinTrait
 
         return $builder->where($column, $operator, $value, $boolean);
     }
+    public function scopeWhereLeftJoin(Builder $builder, $column, $operator = null, $value = null, $boolean = 'and')
+    {
+        list($column, $operator, $value) = QueryNormalizer::normalizeScope(func_get_args());
+        $column = $this->performJoin($builder, $column, 'left');
+
+        return $builder->where($column, $operator, $value, $boolean);
+    }
+    public function scopeWhereCrossJoin(Builder $builder, $column, $operator = null, $value = null, $boolean = 'and')
+    {
+        list($column, $operator, $value) = QueryNormalizer::normalizeScope(func_get_args());
+        $column = $this->performJoin($builder, $column, 'cross');
+
+        return $builder->where($column, $operator, $value, $boolean);
+    }
 
     public function scopeOrWhereJoin(Builder $builder, $column, $operator = null, $value)
     {
@@ -72,10 +86,34 @@ trait EloquentJoinTrait
 
         return $builder->orWhere($column, $operator, $value);
     }
+    public function scopeOrWhereLeftJoin(Builder $builder, $column, $operator = null, $value)
+    {
+        list($column, $operator, $value) = QueryNormalizer::normalizeScope(func_get_args());
+        $column = $this->performJoin($builder, $column, 'left');
+
+        return $builder->orWhere($column, $operator, $value);
+    }
+    public function scopeOrWhereCrossJoin(Builder $builder, $column, $operator = null, $value)
+    {
+        list($column, $operator, $value) = QueryNormalizer::normalizeScope(func_get_args());
+        $column = $this->performJoin($builder, $column, 'cross');
+
+        return $builder->orWhere($column, $operator, $value);
+    }
 
     public function scopeOrderByJoin(Builder $builder, $column, $sortBy = 'asc')
     {
         $column = $this->performJoin($builder, $column, 'inner');
+        return $builder->orderBy($column, $sortBy);
+    }
+    public function scopeOrderByLeftJoin(Builder $builder, $column, $sortBy = 'asc')
+    {
+        $column = $this->performJoin($builder, $column, 'left');
+        return $builder->orderBy($column, $sortBy);
+    }
+    public function scopeOrderByCrossJoin(Builder $builder, $column, $sortBy = 'asc')
+    {
+        $column = $this->performJoin($builder, $column, 'cross');
         return $builder->orderBy($column, $sortBy);
     }
 

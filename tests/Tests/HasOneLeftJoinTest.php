@@ -30,12 +30,12 @@ class HasOneLeftJoinTest extends TestCase
         Seller::where('id', '>', 0)->forceDelete();
         Location::where('id', '>', 0)->forceDelete();
 
-        $items = Seller::orderByJoin('location.address')->get();
+        $items = Seller::orderByLeftJoin('location.address')->get();
         $this->assertEquals(0, $items->count());
 
         $seller = Seller::create(['title' => 'test']);
 
-        $items = Seller::orderByJoin('locationPrimary.address')->get();
+        $items = Seller::orderByLeftJoin('locationPrimary.address')->get();
         $this->assertEquals(1, $items->count());
         $this->assertEquals(1, Seller::count());
     }

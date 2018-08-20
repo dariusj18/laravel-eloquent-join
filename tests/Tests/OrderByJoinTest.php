@@ -46,10 +46,12 @@ class OrderByJoinTest extends TestCase
         OrderItem::create(['name' => '4', 'order_id' => null]);
         $items = OrderItem::orderByJoin('order.number', 'desc')->get();
         $this->checkOrder($items, [2, 3, 1], 3);
+        $items = OrderItem::orderByLeftJoin('order.number', 'desc')->get();
         $this->checkOrder($items, [2, 3, 1], 4);
 
         $items = OrderItem::orderByJoin('order.number', 'asc')->get();
         $this->checkOrder($items, [1, 3, 2], 3);
+        $items = OrderItem::orderByLeftJoin('order.number', 'asc')->get();
         $this->checkOrder($items, [4, 1, 3], 4);
     }
 
@@ -68,6 +70,8 @@ class OrderByJoinTest extends TestCase
         OrderItem::create(['name' => '4', 'order_id' => null]);
         $items = OrderItem::orderByJoin('order.seller.title', 'asc')->get();
         $this->checkOrder($items, [1, 3, 2], 3);
+        $items = OrderItem::orderByLeftJoin('order.seller.title', 'asc')->get();
+        $this->checkOrder($items, [4, 1, 3], 4);
     }
 
     public function testOrderByJoinJoinThirdRelationHasOne()
