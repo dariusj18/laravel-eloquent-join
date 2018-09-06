@@ -40,4 +40,15 @@ class ExceptionTest extends TestCase
         }
         $this->assertTrue(false);
     }
+
+    public function testInvalidRelationForOrderByJoinPivot()
+    {
+        try {
+            Seller::orderByJoinPivot('location.id')->get();
+        } catch (EloquentJoinException $e) {
+            $this->assertEquals("Only allowed relation for orderByJoinPivot is BelongsToManyJoin", $e->getMessage());
+            return;
+        }
+        $this->assertTrue(false);
+    }
 }

@@ -9,7 +9,7 @@ use Fico7489\Laravel\EloquentJoin\Tests\Models\Seller;
 use Fico7489\Laravel\EloquentJoin\Tests\Models\User;
 use Fico7489\Laravel\EloquentJoin\Tests\TestCase;
 
-class OrderByJoinTest extends TestCase
+class OrderByJoinPivotTest extends TestCase
 {
     private function checkOrder($users, $order, $count)
     {
@@ -19,24 +19,46 @@ class OrderByJoinTest extends TestCase
         $this->assertEquals($count, $users->count());
     }
 
-    public function testOrderByJoinJoinFirstRelation()
+    // public function testWhereJoinOrderByJoinPivot()
+    // {
+    //     $users = User::whereJoin('orders.id')->orderByJoinPivot('orders.user_type');
+    //     $query = $users->getQuery();
+    //     return true;
+    // }
+
+    public function testOrderByJoinPivot()
     {
-        $users = User::orderByJoinPivot('orders.user_type')->get();
-        $this->checkOrder($users, [1, 3, 2], 3);
+        // get orders watched by user 2 and order by weight
+        $orders = Order::orderByJoinPivot('users.weight')->get();
+        
+        $queryTest = 'select "orders".* from "orders" inner join ("order_user" inner join "users" on "users"."id" = "order_user"."user_id" and "users"."deleted_at" is null) on "order_user"."order_id" = "orders"."id" where "orders"."deleted_at" is null order by "order_user"."weight" asc';
+        $this->assertEquals($queryTest, $this->fetchQuery());
+    }
 
-        $users = User::orderByJoinPivot('orders.user_type', 'desc')->get();
-        $this->checkOrder($users, [2, 3, 1], 3);
+    public function testOrderByLeftJoinPivot()
+    {
+        // get orders watched by user 2 and order by weight
+        $orders = Order::orderByLeftJoinPivot('users.weight')->get();
+        
+        $queryTest = 'select "orders".* from "orders" left join ("order_user" inner join "users" on "users"."id" = "order_user"."user_id" and "users"."deleted_at" is null) on "order_user"."order_id" = "orders"."id" where "orders"."deleted_at" is null order by "order_user"."weight" asc';
+        $this->assertEquals($queryTest, $this->fetchQuery());
+    }
 
-        $user4 = User::create(['name' => '4']);
-        $order2 = Order::find(2);
-        $order2->users()->attach($user4, ['user_type' => 'a_cool_dude']);
-        $order2_users = User::whereJoin('orders.id', 2)->orderByJoinPivot('orders.user_type')->get();
-        $this->checkOrder($order2_users, [4, 3, 2], 3);
+    public function testWhereJoinOrderByJoinPivot()
+    {
+        // get orders watched by user 2 and order by weight
+        $orders = Order::whereJoin('watchers.id', 2)->orderByJoinPivot('watchers.weight')->get();
+        
+        $queryTest = 'select "orders".* from "orders" inner join ("order_user" inner join "users" on "users"."id" = "order_user"."user_id" and "order_user"."user_type" = ? and "users"."deleted_at" is null) on "order_user"."order_id" = "orders"."id" where "users"."id" = ? and "orders"."deleted_at" is null order by "order_user"."weight" asc';
+        $this->assertEquals($queryTest, $this->fetchQuery());
+    }
 
-        $order2_user3 = Order::find(2)->users()->where('users.id', '=', 3)->first()->pivot;
-        $order2_user3['user_type'] = 'zed';
-        $order2_user3->save();
-        $order2_users = User::whereJoin('orders.id', 2)->orderByJoinPivot('orders.user_type')->get();
-        $this->checkOrder($order2_users, [4, 2, 3], 3);
+    public function testOrderByJoinPivotWhereJoin()
+    {
+        // get orders watched by user 2 and order by weight
+        $orders = Order::orderByJoinPivot('watchers.weight')->whereJoin('watchers.id', 2)->get();
+        
+        $queryTest = 'select "orders".* from "orders" inner join ("order_user" inner join "users" on "users"."id" = "order_user"."user_id" and "order_user"."user_type" = ? and "users"."deleted_at" is null) on "order_user"."order_id" = "orders"."id" where "users"."id" = ? and "orders"."deleted_at" is null order by "order_user"."weight" asc';
+        $this->assertEquals($queryTest, $this->fetchQuery());
     }
 }

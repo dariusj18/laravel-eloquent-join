@@ -123,10 +123,15 @@ trait EloquentJoinTrait
         $qualifiedColumn = $this->performJoin($builder, $column, 'inner');
         
         $relations = explode('.', $column);
-        $relation = current($relations);
+        $relationName = current($relations);
         $column = end($relations);
+        $relation = $this->$relationName();
 
-        $builder->orderBy($this->$relation()->getTable() . '.' . $column, $sortBy);
+        if (!$relation instanceof BelongsToManyJoin) {
+            throw new EloquentJoinException('Only allowed relation for orderByJoinPivot is BelongsToManyJoin');
+        }
+
+        $builder->orderBy($relation->getTable() . '.' . $column, $sortBy);
         
         return $builder;
     }
@@ -135,10 +140,15 @@ trait EloquentJoinTrait
         $qualifiedColumn = $this->performJoin($builder, $column, 'left');
         
         $relations = explode('.', $column);
-        $relation = current($relations);
+        $relationName = current($relations);
         $column = end($relations);
+        $relation = $this->$relationName();
 
-        $builder->orderBy($this->$relation()->getTable() . '.' . $column, $sortBy);
+        if (!$relation instanceof BelongsToManyJoin) {
+            throw new EloquentJoinException('Only allowed relation for orderByJoinPivot is BelongsToManyJoin');
+        }
+
+        $builder->orderBy($relation->getTable() . '.' . $column, $sortBy);
         
         return $builder;
     }
@@ -147,10 +157,15 @@ trait EloquentJoinTrait
         $qualifiedColumn = $this->performJoin($builder, $column, 'cross');
         
         $relations = explode('.', $column);
-        $relation = current($relations);
+        $relationName = current($relations);
         $column = end($relations);
+        $relation = $this->$relationName();
 
-        $builder->orderBy($this->$relation()->getTable() . '.' . $column, $sortBy);
+        if (!$relation instanceof BelongsToManyJoin) {
+            throw new EloquentJoinException('Only allowed relation for orderByJoinPivot is BelongsToManyJoin');
+        }
+
+        $builder->orderBy($relation->getTable() . '.' . $column, $sortBy);
         
         return $builder;
     }

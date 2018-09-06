@@ -40,8 +40,10 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
         OrderItem::create(['name' => '3', 'order_id' => $order3->id]);
 
         $order1->users()->attach($user1);
-        $order2->users()->attach($user2, ['user_type' => 'recipient']);
-        $order2->users()->attach($user3, ['user_type' => 'gifter']);
+        $order3->users()->attach($user1, ['user_type' => 'watcher', 'weight' => 1]);
+        $order3->users()->attach($user2, ['user_type' => 'watcher', 'weight' => 2]);
+        $order3->users()->attach($user2, ['user_type' => 'recipient']);
+        $order3->users()->attach($user3, ['user_type' => 'gifter']);
 
         $this->startListening();
     }

@@ -11,6 +11,23 @@ class Order extends BaseModel
     protected $table = 'orders';
 
     protected $fillable = ['number', 'seller_id'];
+
+    public function items()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    public function itemsWithTrashed()
+    {
+        return $this->hasMany(OrderItem::class)
+            ->withTrashed();
+    }
+
+    public function itemsOnlyTrashed()
+    {
+        return $this->hasMany(OrderItem::class)
+            ->onlyTrashed();
+    }
     
     public function seller()
     {
@@ -20,5 +37,10 @@ class Order extends BaseModel
     public function users()
     {
         return $this->belongsToMany(User::class);
+    }
+
+    public function watchers()
+    {
+        return $this->belongsToMany(User::class)->wherePivot('user_type', '=', 'watchers');
     }
 }
