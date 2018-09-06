@@ -244,7 +244,7 @@ trait EloquentJoinTrait
     private function joinQuery($join, $relatedModel, $relatedTableAlias)
     {
         foreach ($relatedModel->relationWhereClauses as $relationClause) {
-            $join->where($relatedTableAlias . '.' . $relationClause['column'], $relationClause['operator'], $relationClause['value'], $relationClause['boolean']);
+            $join->where(((strpos($relationClause['column'], ".") === false) ? $relatedTableAlias . '.' : '') . $relationClause['column'], $relationClause['operator'], $relationClause['value'], $relationClause['boolean']);
         }
 
         if (method_exists($relatedModel, 'getQualifiedDeletedAtColumn')) {
