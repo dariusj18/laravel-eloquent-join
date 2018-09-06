@@ -228,7 +228,7 @@ trait EloquentJoinTrait
                     });
                 } elseif ($relatedRelation instanceof BelongsToManyJoin) {
                     $builder->$joinMethod($relatedRelation->getTable(), function ($join) use ($relatedRelation, $relatedTableAlias, $currentTable, $relatedPrimaryKey, $relatedModel) {
-                        $join->on($relatedRelation->getQualifiedForeignPivotKeyName(), '=', $currentTable . '.' . $relatedPrimaryKey);
+                        $join->on($relatedRelation->getQualifiedForeignPivotKeyName(), '=', $relatedRelation->getQualifiedParentKeyName());
 
                         $join->join($relatedRelation->getRelated()->getTable(), function ($join) use ($relatedRelation, $relatedTableAlias, $relatedModel) {
                             $join->on($relatedRelation->getRelated()->getQualifiedKeyName(), '=', $relatedRelation->getQualifiedRelatedPivotKeyName());
