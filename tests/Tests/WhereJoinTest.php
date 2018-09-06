@@ -68,6 +68,14 @@ class WhereJoinTest extends TestCase
 
     public function testWhereJoinHasBelongsToMany()
     {
+        Order::whereJoin('users.name', '=', 1)->get();
+
+        $queryTest = '/select "orders".* from "orders" inner join \("order_user" inner join "users" on "users"."id" = "order_user"."user_id" and "users"."deleted_at" is null\) on "order_user"."order_id" = "orders"."id" where "users"."name" = \? and "orders"."deleted_at" is null/';
+        $this->assertRegExp($queryTest, $this->fetchQuery());
+    }
+
+    public function testWhereLeftJoinHasBelongsToMany()
+    {
         Order::whereLeftJoin('users.name', '=', 1)->get();
 
         $queryTest = '/select "orders".* from "orders" left join \("order_user" inner join "users" on "users"."id" = "order_user"."user_id" and "users"."deleted_at" is null\) on "order_user"."order_id" = "orders"."id" where "users"."name" = \? and "orders"."deleted_at" is null/';
