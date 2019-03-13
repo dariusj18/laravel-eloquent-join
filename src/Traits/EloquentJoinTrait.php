@@ -14,13 +14,16 @@ trait EloquentJoinTrait
     use ExtendRelationsTrait;
 
     //use table alias for join (real table name or uniqid())
-    private $useTableAlias = false;
+    protected $useTableAlias = false;
 
     //store if ->select(...) is already called on builder (we want only one select)
     private $selected = false;
 
     //store joined tables, we want join table only once (e.g. when you call orderByJoin more time)
     private $joinedTables = [];
+
+    //store joined pivots aliases, this way we don't have to worry about multiple pivots with the same name
+    private $joinedPivots = [];
 
 
     //store not allowed clauses on join relations for throw exception (e.g. whereHas, orderBy etc.)
@@ -131,7 +134,7 @@ trait EloquentJoinTrait
             throw new EloquentJoinException('Only allowed relation for orderByJoinPivot is BelongsToManyJoin');
         }
 
-        $builder->orderBy($relation->getTable() . '.' . $column, $sortBy);
+        $builder->orderBy($this->joinedPivots[$relationName] . '.' . $column, $sortBy);
         
         return $builder;
     }
@@ -148,7 +151,7 @@ trait EloquentJoinTrait
             throw new EloquentJoinException('Only allowed relation for orderByJoinPivot is BelongsToManyJoin');
         }
 
-        $builder->orderBy($relation->getTable() . '.' . $column, $sortBy);
+        $builder->orderBy($this->joinedPivots[$relationName] . '.' . $column, $sortBy);
         
         return $builder;
     }
@@ -165,7 +168,7 @@ trait EloquentJoinTrait
             throw new EloquentJoinException('Only allowed relation for orderByJoinPivot is BelongsToManyJoin');
         }
 
-        $builder->orderBy($relation->getTable() . '.' . $column, $sortBy);
+        $builder->orderBy($this->joinedPivots[$relationName] . '.' . $column, $sortBy);
         
         return $builder;
     }
@@ -215,7 +218,7 @@ trait EloquentJoinTrait
                     $builder->$joinMethod($joinQuery, function ($join) use ($relatedTableAlias, $keyRelated, $currentTable, $relatedPrimaryKey, $relatedModel) {
                         $join->on($relatedTableAlias . '.' . $relatedPrimaryKey, '=', $currentTable . '.' . $keyRelated);
 
-                        $this->joinQuery($join, $relatedModel, $relatedTableAlias);
+                        $this->joinQuery($relatedRelation, $join, $relatedModel, $relatedTableAlias);
                     });
                 } elseif ($relatedRelation instanceof HasOneJoin) {
                     $keyRelated = $relatedRelation->getQualifiedForeignKeyName();
@@ -224,17 +227,19 @@ trait EloquentJoinTrait
                     $builder->$joinMethod($joinQuery, function ($join) use ($relatedTableAlias, $keyRelated, $currentTable, $relatedPrimaryKey, $relatedModel, $currentPrimaryKey) {
                         $join->on($relatedTableAlias . '.' . $keyRelated, '=', $currentTable . '.' . $currentPrimaryKey);
 
-                        $this->joinQuery($join, $relatedModel, $relatedTableAlias);
+                        $this->joinQuery($relatedRelation, $join, $relatedModel, $relatedTableAlias);
                     });
                 } elseif ($relatedRelation instanceof BelongsToManyJoin) {
-                    $builder->$joinMethod($relatedRelation->getTable(), function ($join) use ($relatedRelation, $relatedTableAlias, $currentTable, $relatedPrimaryKey, $relatedModel) {
-                        $join->on($relatedRelation->getQualifiedForeignPivotKeyName(), '=', $relatedRelation->getQualifiedParentKeyName());
+                    $pivotAlias = uniqid();
+                    $builder->$joinMethod($relatedRelation->getTable() . ' AS ' . $pivotAlias, function ($join) use ($relatedRelation, $relatedTableAlias, $currentTable, $relatedPrimaryKey, $relatedModel, $pivotAlias) {
+                        $join->on($pivotAlias . '.' . $relatedRelation->getForeignPivotKeyName(), '=', $relatedRelation->getQualifiedParentKeyName());
 
-                        $join->join($relatedRelation->getRelated()->getTable(), function ($join) use ($relatedRelation, $relatedTableAlias, $relatedModel) {
-                            $join->on($relatedRelation->getRelated()->getQualifiedKeyName(), '=', $relatedRelation->getQualifiedRelatedPivotKeyName());
-                            $this->joinQuery($join, $relatedModel, $relatedTableAlias);
+                        $join->join($relatedRelation->getRelated()->getTable() . ' AS ' . $relatedTableAlias, function ($join) use ($relatedRelation, $relatedTableAlias, $relatedModel, $pivotAlias) {
+                            $join->on($relatedTableAlias . '.' . $relatedRelation->getRelated()->getKeyName(), '=', $pivotAlias . '.' . $relatedRelation->getRelatedPivotKeyName());
+                            $this->joinQuery($relatedRelation, $join, $relatedModel, $relatedTableAlias, $pivotAlias);
                         });
                     });
+                    $this->joinedPivots[$relation] = $pivotAlias;
                 } else {
                     throw new EloquentJoinException('Only allowed relations for whereJoin, orWhereJoin and orderByJoin are BelongsToJoin, HasOneJoin and BelongsToManyJoin');
                 }
@@ -256,10 +261,26 @@ trait EloquentJoinTrait
         return $currentTable . '.' . $column;
     }
 
-    private function joinQuery($join, $relatedModel, $relatedTableAlias)
+    private function joinQuery($relatedRelation, $join, $relatedModel, $relatedTableAlias, $pivotAlias = null)
     {
         foreach ($relatedModel->relationWhereClauses as $relationClause) {
-            $join->where(((strpos($relationClause['column'], ".") === false) ? $relatedTableAlias . '.' : '') . $relationClause['column'], $relationClause['operator'], $relationClause['value'], $relationClause['boolean']);
+            $column = $relationClause['column'];
+            $tableAndColumn = explode('.', $column);
+            if (count($tableAndColumn) == 1) {
+                $column = $relatedTableAlias . '.' . $column;
+            } else {
+                $table = current($tableAndColumn);
+                $column = end($tableAndColumn);
+                $joinTableAndAlias = explode(' AS ', $join->table);
+                $joinTable = current($joinTableAndAlias);
+
+                if ($table == $joinTable) {
+                    $column = $relatedTableAlias . '.' . $column;
+                } else if ($relatedRelation instanceof BelongsToManyJoin) {
+                    $column = $pivotAlias . '.' . $column;
+                }
+            }
+            $join->where($column, $relationClause['operator'], $relationClause['value'], $relationClause['boolean']);
         }
 
         if (method_exists($relatedModel, 'getQualifiedDeletedAtColumn')) {
